@@ -1,0 +1,181 @@
+{% extends "admin/change_form.html" %}
+
+{% block extrahead %}
+  {{ block.super }}
+  <script type='text/javascript'>
+    const toggleFieldVisibility = (name, hide, disableRequired=false) => {
+      const label = django.jQuery(`label[for=id_${ name }]`)
+      const row = label.parent().parent()
+      const inputField = django.jQuery(`input[name=${ name }]`)
+
+      if(hide === false) {
+        row.show()
+
+        if(!disableRequired) {
+          inputField.attr('required')
+          label.addClass('required')
+        } else {
+          inputField.removeAttr('required')
+          label.removeClass('required')
+        }
+      } else {
+        row.hide()
+        inputField.removeAttr('required')
+        label.removeClass('required')
+      }
+    }
+
+    django.jQuery(function() {
+      const type = django.jQuery('select[name=type]').val()
+      const isImmediatelyOrder = django.jQuery('input[name=is_immediately_order]').attr('checked')
+
+      if(type === 'ONLY_DELIVERY') {
+        toggleFieldVisibility('agent', true)
+        toggleFieldVisibility('deliverer', false)
+      } else {
+        toggleFieldVisibility('agent', false)
+        toggleFieldVisibility('deliverer', true)
+      }
+
+      toggleFieldVisibility('inspection_cost', true)
+      toggleFieldVisibility('reservation_date_0', isImmediatelyOrder === 'checked')
+
+      django.jQuery('select[name=type]').change(e => {
+        const typeValue = e.target.value
+
+        if(typeValue === 'ONLY_DELIVERY') {
+          toggleFieldVisibility('agent', true)
+          toggleFieldVisibility('deliverer', false, true)
+        } else {
+          toggleFieldVisibility('agent', false)
+          toggleFieldVisibility('deliverer', true)
+        }
+
+        if(typeValue == 'EVALUATION_DELIVERY') {
+          toggleFieldVisibility('evaluation_cost', false)
+          toggleFieldVisibility('inspection_cost', true)
+        } else if(typeValue == 'INSPECTION_DELIVERY') {
+          toggleFieldVisibility('evaluation_cost', true)
+          toggleFieldVisibility('inspection_cost', false)
+        } else if(typeValue == 'ONLY_DELIVERY') {
+          toggleFieldVisibility('evaluation_cost', true)
+          toggleFieldVisibility('inspection_cost', true)
+        }
+
+        onDeliveryInformationChange(e)
+      })
+
+      const calcFeeValue = () => {
+        const evaluationCost = parseInt(django.jQuery('input[name=evaluation_cost]').val(), 10)
+        const inspectionCost = parseInt(django.jQuery('input[name=inspection_cost]').val(), 10)
+        const deliveringCost = parseInt(django.jQuery('input[name=delivering_cost]').val(), 10)
+        const additionalSuggestedCost = parseInt(django.jQuery('input[name=additional_suggested_cost').val(), 10)
+        const feePercent = parseInt(django.jQuery('select[name=fee-selector]').val(), 10)
+
+        const fee = (evaluationCost + inspectionCost + deliveringCost + additionalSuggestedCost) * (feePercent / 100)
+
+        django.jQuery('input[name=fee]').val(fee)
+      }
+
+      const onImmediatelyOrderCheckChange = (e) => {
+        if(e.target.checked === true) {
+          toggleFieldVisibility('reservation_date_0', true)
+        } else {
+          toggleFieldVisibility('reservation_date_0', false)
+        }
+      }
+
+      const onDeliveryInformationChange = (e) => {
+        setTimeout(
+          async () => {
+            const type = django.jQuery('select[name=type]').val()
+            const clientId = django.jQuery('input[id=id_client]').val()
+            const stopovers = django.jQuery('span[id=stopovers_dynamic_raw_id_label]').children()
+            const source_location = django.jQuery('span[id=source_location_dynamic_raw_id_label] > a').html()
+            const destination_location = django.jQuery('span[id=destination_location_dynamic_raw_id_label] > a').html()
+
+            if(!!type && !!clientId && !!source_location && !!destination_location) {
+              const data = {
+                'type': type,
+                'client_id': clientId,
+                'source_road_address': source_location,
+                'destination_road_address': destination_location,
+              }
+
+              if(stopovers.length > 0) {
+                data['stopovers'] = stopovers.map((s) => ({ 'road_address': '1', })).toArray()
+              }
+
+              try {
+                const response = await django.jQuery.post({
+                  url: '/v1/requestings/costs',
+                  contentType: 'application/json; charset=utf-8',
+                  dataType: 'json',
+                  data: JSON.stringify(data),
+                })
+
+                django.jQuery('input[name=evaluation_cost]').val(response.evaluation_cost || 0)
+                django.jQuery('input[name=inspection_cost]').val(response.inspection_cost || 0)
+                django.jQuery('input[name=delivering_cost]').val(response.delivery_cost || 0)
+
+                calcFeeValue()
+              } catch (error) {
+                console.dir(error)
+                window.alert('요금을 자동으로 가져오는데 실패했습니다.')
+              }
+            }
+          },
+          200
+        )
+      }
+
+      django.jQuery('input[name=evaluation_cost]').change(calcFeeValue)
+      django.jQuery('input[name=inspection_cost]').change(calcFeeValue)
+      django.jQuery('input[name=delivering_cost]').change(calcFeeValue)
+      django.jQuery('input[name=additional_suggested_cost]').change(calcFeeValue)
+      django.jQuery('select[name=fee-selector]').change(calcFeeValue)
+      django.jQuery('input[name=is_immediately_order]').change(onImmediatelyOrderCheckChange)
+
+      django.jQuery('input[id=id_client]').change(onDeliveryInformationChange)
+      django.jQuery('input[name=source_location]').change(onDeliveryInformationChange)
+      django.jQuery('input[name=destination_location]').change(onDeliveryInformationChange)
+      django.jQuery('input[id=id_stopovers]').change(onDeliveryInformationChange)
+    })
+  </script>
+{% endblock %}
+
+{% block field_sets %}
+{% for fieldset in adminform %}
+  <fieldset class="module aligned {{ fieldset.classes }}">
+      {% if fieldset.name %}<h2>{{ fieldset.name }}</h2>{% endif %}
+      {% if fieldset.description %}
+        <div class="description">{{ fieldset.description|safe }}</div>
+      {% endif %}
+      {% for line in fieldset %}
+          <div class="form-row{% if line.fields|length == 1 and line.errors %} errors{% endif %}{% if not line.has_visible_field %} hidden{% endif %}{% for field in line %}{% if field.field.name %} field-{{ field.field.name }}{% endif %}{% endfor %}">
+              {% if line.fields|length == 1 %}{{ line.errors }}{% endif %}
+              {% for field in line %}
+                  <div{% if not line.fields|length == 1 %} class="fieldBox{% if field.field.name %} field-{{ field.field.name }}{% endif %}{% if not field.is_readonly and field.errors %} errors{% endif %}{% if field.field.is_hidden %} hidden{% endif %}"{% elif field.is_checkbox %} class="checkbox-row"{% endif %}>
+                      {% if not line.fields|length == 1 and not field.is_readonly %}{{ field.errors }}{% endif %}
+                      {% if field.is_checkbox %}
+                          {{ field.field }}{{ field.label_tag }}
+                      {% else %}
+                          {{ field.label_tag }}
+                          {% if field.is_readonly %}
+                              <div class="readonly">{{ field.contents }}</div>
+                          {% else %}
+                              {{ field.field }}
+                          {% endif %}
+                      {% endif %}
+                  </div>
+                  {% if field.field.help_text %}
+                      <div class="help"{% if field.field.id_for_label %} id="{{ field.field.id_for_label }}_helptext"{% endif %}>
+                          <div>{{ field.field.help_text|safe }}</div>
+                      </div>
+                  {% endif %}
+              {% endfor %}
+          </div>
+      {% endfor %}
+  </fieldset>
+{% endfor %}
+{% endblock %}

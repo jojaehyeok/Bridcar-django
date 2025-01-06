@@ -1,0 +1,15 @@
+tags
+
+__pycache__
+
+.pyrightconfig.json
+
+src/pcar/files
+
+src/pcar/.env
+src/pcar/settings.py
+
+release.zip
+configs/firebase/key.json
+
+/configs/

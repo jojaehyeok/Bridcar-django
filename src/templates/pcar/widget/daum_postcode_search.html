@@ -1,0 +1,21 @@
+<script type='text/javascript'>
+  function search_daum_postcode() {
+    new daum.Postcode({
+      oncomplete: function (data) {
+        django.jQuery('input[name={{ widget.name }}]').val(data.roadAddress)
+      }
+    }).open();
+  }
+</script>
+
+<input
+  readonly
+  type='text'
+  placeholder='클릭해서 주소 검색'
+  class='vTextField'
+  {% if widget.value != None %}
+    value='{{ widget.value|stringformat:'s' }}'
+  {% endif %}
+  name='{{ widget.name }}'
+  onclick='search_daum_postcode()'
+/>

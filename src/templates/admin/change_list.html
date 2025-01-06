@@ -1,0 +1,26 @@
+{% extends "admin/change_list.html" %}
+
+{% block extrahead %}
+  {{ block.super }}
+  <style type='text/css' rel='stylesheet'>
+    #result_list {
+      white-space: nowrap;
+    }
+
+    #result_list tbody tr:hover {
+      background-color: rgba(119, 221, 119, 0.2) !important;
+    }
+
+    .row {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+    }
+
+    .row > img {
+      margin-right: 4px;
+    }
+  </style>
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js'></script>
+  <script src='https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/locale/ko.min.js'></script>
+{% endblock %}

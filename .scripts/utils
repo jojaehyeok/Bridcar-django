@@ -1,0 +1,9 @@
+#!/bin/bash
+
+function check_base_directory() {
+    if [[ ! -d "./.scripts" ]]
+    then
+        echo "Run on project base directory"
+        exit
+    fi
+}

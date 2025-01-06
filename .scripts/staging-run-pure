@@ -1,0 +1,8 @@
+#!/bin/bash
+
+source $(dirname $0)/utils
+
+check_base_directory
+
+docker-compose -f configs/docker/staging/docker-compose.yml build --no-cache
+docker-compose -f configs/docker/staging/docker-compose.yml up

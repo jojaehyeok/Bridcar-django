@@ -1,0 +1,16 @@
+{% extends "admin/base.html" %}
+
+{% block extrahead %}
+<script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+{% endblock %}
+
+{% block title %}
+{{ title }} | 브릿카 관리자페이지
+{% endblock %}
+
+{% block branding %}
+<h1 id="site-name"><a href="{% url 'admin:index' %}">브릿카 관리자페이지</a></h1>
+{% endblock %}
+
+{% block nav-global %}
+{% endblock %}

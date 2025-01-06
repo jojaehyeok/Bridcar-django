@@ -1,0 +1,21 @@
+#!/bin/bash
+
+source $(dirname $0)/utils
+
+check_base_directory
+
+read -p "Project name?: " project_name
+
+if [[ -n $project_name && -d ./src/boilerplate ]]
+then
+    echo "Project name will changing to $project_name"
+
+    mv ./src/boilerplate ./src/$project_name
+
+    grep -rl boilerplate ./src/ | xargs sed -i "s/boilerplate/$project_name/g"
+    grep -rl boilerplate ./configs/ | xargs sed -i "s/boilerplate/$project_name/g"
+
+    rm -rf ./.git
+
+    echo "Successed!"
+fi

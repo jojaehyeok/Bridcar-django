@@ -1,0 +1,14 @@
+#!/bin/bash
+
+source $(dirname $0)/utils
+
+check_base_directory
+
+aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin 471112520312.dkr.ecr.ap-northeast-2.amazonaws.com/
+
+docker-compose -f configs/docker/prod/docker-compose.yml pull
+docker-compose -f configs/docker/prod/docker-compose.yml build --no-cache
+docker-compose -f configs/docker/prod/docker-compose.yml down --volumes
+docker volume rm prod_source-files
+
+docker-compose -f configs/docker/prod/docker-compose.yml up -d

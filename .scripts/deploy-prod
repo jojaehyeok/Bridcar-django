@@ -1,0 +1,11 @@
+#!/bin/bash
+
+source $(dirname $0)/utils
+
+check_base_directory
+
+$(aws ecr get-login --profile bridcar-control-room-deployer --no-include-email --region ap-northeast-2)
+
+docker build -t bridcar-prod -f configs/docker/prod/Dockerfile .
+docker tag bridcar-prod 471112520312.dkr.ecr.ap-northeast-2.amazonaws.com/bridcar-prod:latest
+docker push 471112520312.dkr.ecr.ap-northeast-2.amazonaws.com/bridcar-prod:latest
